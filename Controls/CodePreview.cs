@@ -111,18 +111,23 @@ namespace EditorMiniMap
             return 10;
         }
 
-        public void CenterEditor(int line)
+		public void CenterEditor(int line, int columnDelta)
         {
-            int linesOnScreen = this.Editor.LinesOnScreen;
-            int lineCount = this.Editor.LineCount;
-            int firstLine = this.Editor.FirstVisibleLine;
+			int linesOnScreen = this.Editor.LinesOnScreen;
+			int lineCount = this.Editor.LineCount;
+			int firstLine = this.Editor.FirstVisibleLine;
 
-            // Constrain the first visible line to a reasonable number
-            int firstVisibleLine = Math.Min(Math.Max(line - (int)Math.Floor(linesOnScreen / 2.0), 0), lineCount - linesOnScreen + 1);
-            
-            // Calculate shift then scroll
-            int delta = firstVisibleLine - firstLine - 1;
-            this.Editor.LineScroll(0, delta);
+			// Constrain the first visible line to a reasonable number
+			int firstVisibleLine = Math.Min(Math.Max(line - (int)Math.Floor(linesOnScreen / 2.0), 0), lineCount - linesOnScreen + 1);
+
+			// Calculate shift then scroll
+			int delta = firstVisibleLine - firstLine - 1;
+
+			//Reset the column and move vertically
+			this.Editor.LineScroll(-int.MaxValue, delta);
+
+			//Set the column but with sensitivity
+			this.Editor.LineScroll(columnDelta / 4, 0);
         }
     }
 }

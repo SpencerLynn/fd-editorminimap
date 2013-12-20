@@ -31,6 +31,8 @@ namespace EditorMiniMap
         private bool _lastSci2Visible = false;
         private int _lastLinesOnScreen = 0;
 
+		private int _lastColumn = 0;
+
         private Language _lastLanguage = null;
         private Timer _updateTimer = null;
         
@@ -307,33 +309,55 @@ namespace EditorMiniMap
 
         private void ShowCodePopup(Point point)
         {
-            var position = this.PositionFromPoint(point.X, point.Y);
-            var line = this.LineFromPosition(position);
+			var position = this.PositionFromPoint(point.X, point.Y);
+			var line = this.LineFromPosition(position);
+			_lastColumn = this.Column(position);
 
-            var controlPosition = this.PointToScreen(new Point(this.Left, this.Top));
-            point = this.PointToScreen(point);
+			var controlPosition = this.PointToScreen(new Point(this.Left, this.Top));
+			point = this.PointToScreen(point);
 
-            _codePopup = new CodePreview(_document);
-            _codePopup.CenterEditor(line);
+			_codePopup = new CodePreview(_document);
+			_codePopup.CenterEditor(line, 0);
 
-            if (this.Parent.Dock == DockStyle.Right)
-                _codePopup.Left = controlPosition.X - _codePopup.Width;
-            else
-                _codePopup.Left = controlPosition.X + this.Width;
+			if (this.Parent.Dock == DockStyle.Right)
+				_codePopup.Left = controlPosition.X - _codePopup.Width;
+			else
+				_codePopup.Left = controlPosition.X + this.Width;
 
-            _codePopup.Top = point.Y - (_codePopup.Height / 2);
-            _codePopup.TopMost = true;
-            _codePopup.Show(PluginCore.PluginBase.MainForm);
+			_codePopup.Top = point.Y - (_codePopup.Height / 2);
+			_codePopup.TopMost = true;
+			_codePopup.Show(PluginCore.PluginBase.MainForm);
         }
 
         private void UpdateCodePopup(Point point)
         {
-            var position = this.PositionFromPoint(point.X, point.Y);
-            var line = this.LineFromPosition(position);
-            _codePopup.CenterEditor(line);
+			var position = this.PositionFromPoint(point.X, point.Y);
+			var line = this.LineFromPosition(position);
+			var column = this.Column(position);
 
-            point = this.PointToScreen(point);
-            _codePopup.Top = point.Y - (_codePopup.Height / 2);
+			if (this.LineLength(line) < _lastColumn)
+			{
+				// If the current line is shorter than the last column, set column to be the last column so we do not jump far to the right when we hit the next real line
+				column = _lastColumn;
+			}
+			else if (Math.Abs(column - _lastColumn) < 5)
+			{
+				// If we haven't moved 5 pixels in either direction, do not move the mini map
+				column = _lastColumn;
+			}
+			else if (column < _lastColumn)
+			{
+				// If the cursor moved left in the minimap, then we want to reset _lastColumn to any move back right will scroll right
+				_lastColumn = column;
+			}
+
+			// Send the Column Delta
+			var columnDelta = column - _lastColumn;
+
+			_codePopup.CenterEditor(line, columnDelta);
+
+			point = this.PointToScreen(point);
+			_codePopup.Top = point.Y - (_codePopup.Height / 2);
         }
 
         private void CloseCodePopup()
